@@ -7,58 +7,58 @@ LABEL maintainer="walentinlamonos@gmail.com"
 
 ENV STEAMAPPID 740
 ENV STEAMAPPDIR /home/steam/csgo-dedicated
+ENV SRCDS_FPSMAX=300
+ENV SRCDS_TICKRATE=128
+ENV SRCDS_PORT=27015
+ENV SRCDS_TV_PORT=27020
+ENV SRCDS_CLIENT_PORT=27005
+ENV SRCDS_MAXPLAYERS=14
+ENV SRCDS_TOKEN=0
+ENV SRCDS_RCONPW="changeme"
+ENV SRCDS_PW="changeme"
+ENV SRCDS_STARTMAP="de_dust2"
+ENV SRCDS_REGION=3
+ENV SRCDS_MAPGROUP="mg_active"
+ENV SRCDS_GAMETYPE=0
+ENV SRCDS_GAMEMODE=1
+
+ADD etc ${STEAMAPPDIR}
 
 # Create autoupdate config
 # Add entry script & ESL config
 # Remove packages and tidy up
-RUN set -x \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends --no-install-suggests \
-		wget=1.20.1-1.1 \
-		ca-certificates=20190110 \
-	&& mkdir -p ${STEAMAPPDIR}/csgo \
-	&& cd ${STEAMAPPDIR} \
-	&& wget https://raw.githubusercontent.com/CM2Walki/CSGO/master/etc/entry.sh \
-	&& chmod 755 ${STEAMAPPDIR}/entry.sh \
-	&& cd ${STEAMAPPDIR}/csgo \
-	&& { \
-			echo '@ShutdownOnFailedCommand 1'; \
-			echo '@NoPromptForPassword 1'; \
-			echo 'login anonymous'; \
-			echo 'force_install_dir ${STEAMAPPDIR}'; \
-			echo 'app_update ${STEAMAPPID}'; \
-			echo 'quit'; \
-		} > ${STEAMAPPDIR}/csgo_update.txt \
-	&& wget -qO- https://raw.githubusercontent.com/CM2Walki/CSGO/master/etc/cfg.tar.gz | tar xvzf - \
-	&& chown -R steam:steam ${STEAMAPPDIR} \
-	&& apt-get remove --purge -y \
-		wget \
-	&& apt-get clean autoclean \
-	&& apt-get autoremove -y \
-	&& rm -rf /var/lib/apt/lists/*
-
-ENV SRCDS_FPSMAX=300 \
-	SRCDS_TICKRATE=128 \
-	SRCDS_PORT=27015 \
-	SRCDS_TV_PORT=27020 \
-	SRCDS_CLIENT_PORT=27005 \
-	SRCDS_MAXPLAYERS=14 \
-	SRCDS_TOKEN=0 \
-	SRCDS_RCONPW="changeme" \
-	SRCDS_PW="changeme" \
-	SRCDS_STARTMAP="de_dust2" \
-	SRCDS_REGION=3 \
-	SRCDS_MAPGROUP="mg_active" \
-	SRCDS_GAMETYPE=0 \
-	SRCDS_GAMEMODE=1
+RUN  apt-get update
+RUN  apt-get install -y --no-install-recommends --no-install-suggests wget \
+		ca-certificates=20190110
+RUN  mkdir -p ${STEAMAPPDIR}/csgo
+WORKDIR ${STEAMAPPDIR}
+RUN  mv entry.sh /
+RUN  chmod 755 /entry.sh
+RUN  cd ${STEAMAPPDIR}/csgo
+RUN  {	\
+			echo '@ShutdownOnFailedCommand 1';	\
+			echo '@NoPromptForPassword 1';	\
+			echo 'login anonymous';	\
+			echo 'force_install_dir ${STEAMAPPDIR}';	\
+			echo 'app_update ${STEAMAPPID}';	\
+			echo 'quit';	\
+		} > ${STEAMAPPDIR}/csgo_update.txt
+RUN tar zxf cfg.tar.gz
+RUN rm -f cfg.tar.gz
+RUN  chown -R steam:steam .
+RUN  apt-get remove --purge -y wget
+RUN  apt-get clean autoclean
+RUN  apt-get autoremove -y
+RUN  rm -rf /var/lib/apt/lists/*
 
 USER steam
 
 WORKDIR $STEAMAPPDIR
 
 VOLUME $STEAMAPPDIR
+VOLUME /home/steam/Steam
 
-ENTRYPOINT ${STEAMAPPDIR}/entry.sh
+ENTRYPOINT /entry.sh
 
 # Expose ports
 EXPOSE 27015/tcp 27015/udp 27020/udp
